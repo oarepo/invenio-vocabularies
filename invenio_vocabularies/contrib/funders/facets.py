@@ -8,7 +8,7 @@
 
 """Vocabulary awards facets and labels."""
 
-from ...services.facets import VocabularyLabels, lazy_get_label
+from ...services.facets import VocabularyLabels, lazy_get_title
 
 
 class FundersLabels(VocabularyLabels):
@@ -33,4 +33,4 @@ class FundersLabels(VocabularyLabels):
 
     def _vocab_to_label(self, vocab):
         """Returns the label string for a vocabulary entry."""
-        return f"{lazy_get_label(vocab['title'])} ({vocab['country']})"
+        return f"{lazy_get_title(vocab)} ({vocab['country']})"

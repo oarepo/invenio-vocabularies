@@ -51,6 +51,14 @@ def lazy_get_label(vocab_item):
 
     return make_lazy_string(gettext_from_dict, vocab_item, **params)
 
+def lazy_get_title(vocab_item):
+    """Lazy evaluation of a localized vocabulary label."""
+    if "title" in vocab_item:
+        return lazy_get_label(vocab_item["title"])
+    elif "name" in vocab_item:
+        return lazy_get_label(vocab_item["name"])
+    else:
+        return ""
 
 class VocabularyLabels:
     """Fetching of vocabulary labels for facets."""
@@ -76,7 +84,7 @@ class VocabularyLabels:
 
     def _vocab_to_label(self, vocab):
         """Returns the label string for a vocabulary entry."""
-        return lazy_get_label(vocab["title"])
+        return lazy_get_title(vocab)
 
     def __call__(self, ids):
         """Return the mapping when evaluated."""
