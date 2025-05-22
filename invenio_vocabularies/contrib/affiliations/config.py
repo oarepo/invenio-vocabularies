@@ -26,7 +26,12 @@ class AffiliationsSearchOptions(SearchOptions):
     """Search options."""
 
     suggest_parser_cls = SuggestQueryParser.factory(
-        fields=["name^100", "acronym^20", "id^20"],
+        fields=[
+            "name^100",
+            "acronym^20",
+            "id^20",
+            "identifiers.identifier^10",
+        ],
     )
 
     sort_default = "bestmatch"
