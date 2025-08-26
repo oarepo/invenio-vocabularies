@@ -9,6 +9,8 @@
 
 """Invenio module for managing vocabularies."""
 
+from invenio_base.utils import obj_or_import_string
+
 from . import config
 from .contrib.affiliations import (
     AffiliationsResource,
@@ -43,7 +45,6 @@ from .contrib.subjects import (
 from .resources import (
     VocabulariesAdminResource,
     VocabulariesResource,
-    VocabulariesResourceConfig,
     VocabularyTypeResourceConfig,
 )
 from .services.config import VocabularyTypesServiceConfig
@@ -77,12 +78,44 @@ class InvenioVocabularies(object):
         """Customized service configs."""
 
         class ServiceConfigs:
-            affiliations = AffiliationsServiceConfig
-            awards = AwardsServiceConfig
-            funders = FundersServiceConfig
-            names = NamesServiceConfig
-            subjects = SubjectsServiceConfig
-            vocabulary_types = VocabularyTypesServiceConfig
+            affiliations = obj_or_import_string(
+                app.config.get(
+                    "VOCABULARIES_AFFILIATIONS_SERVICE_CONFIG_CLASS",
+                    AffiliationsServiceConfig,
+                )
+            )
+            awards = obj_or_import_string(
+                app.config.get(
+                    "VOCABULARIES_AWARDS_SERVICE_CONFIG_CLASS", AwardsServiceConfig
+                )
+            )
+            funders = obj_or_import_string(
+                app.config.get(
+                    "VOCABULARIES_FUNDERS_SERVICE_CONFIG_CLASS", FundersServiceConfig
+                )
+            )
+            names = obj_or_import_string(
+                app.config.get(
+                    "VOCABULARIES_NAMES_SERVICE_CONFIG_CLASS", NamesServiceConfig
+                )
+            )
+            subjects = obj_or_import_string(
+                app.config.get(
+                    "VOCABULARIES_SUBJECTS_SERVICE_CONFIG_CLASS", SubjectsServiceConfig
+                )
+            )
+            vocabularies = obj_or_import_string(
+                app.config.get(
+                    "VOCABULARIES_SERVICE_CONFIG_CLASS",
+                    app.config["VOCABULARIES_SERVICE_CONFIG"],
+                )
+            )
+            vocabulary_types = obj_or_import_string(
+                app.config.get(
+                    "VOCABULARIES_TYPES_SERVICE_CONFIG_CLASS",
+                    VocabularyTypesServiceConfig,
+                )
+            )
 
         return ServiceConfigs
 
@@ -91,52 +124,135 @@ class InvenioVocabularies(object):
         service_configs = self.service_configs(app)
 
         # Services
-        self.affiliations_service = AffiliationsService(
-            config=service_configs.affiliations,
-        )
-        self.awards_service = AwardsService(
-            config=service_configs.awards,
-        )
-        self.funders_service = FundersService(config=service_configs.funders)
-        self.names_service = NamesService(config=service_configs.names)
-        self.subjects_service = SubjectsService(config=service_configs.subjects)
-        self.vocabularies_service = VocabulariesService(
-            config=app.config["VOCABULARIES_SERVICE_CONFIG"],
-        )
-        self.vocabulary_types_service = VocabularyTypeService(
-            config=service_configs.vocabulary_types
-        )
+        self.affiliations_service = obj_or_import_string(
+            app.config.get(
+                "VOCABULARIES_AFFILIATIONS_SERVICE_CLASS", AffiliationsService
+            )
+        )(config=service_configs.affiliations)
+        self.awards_service = obj_or_import_string(
+            app.config.get("VOCABULARIES_AWARDS_SERVICE_CLASS", AwardsService)
+        )(config=service_configs.awards)
+        self.funders_service = obj_or_import_string(
+            app.config.get("VOCABULARIES_FUNDERS_SERVICE_CLASS", FundersService)
+        )(config=service_configs.funders)
+        self.names_service = obj_or_import_string(
+            app.config.get("VOCABULARIES_NAMES_SERVICE_CLASS", NamesService)
+        )(config=service_configs.names)
+        self.subjects_service = obj_or_import_string(
+            app.config.get("VOCABULARIES_SUBJECTS_SERVICE_CLASS", SubjectsService)
+        )(config=service_configs.subjects)
+        self.vocabularies_service = obj_or_import_string(
+            app.config.get("VOCABULARIES_SERVICE_CLASS", VocabulariesService)
+        )(config=service_configs.vocabularies)
+        self.vocabulary_types_service = obj_or_import_string(
+            app.config.get("VOCABULARIES_TYPES_SERVICE_CLASS", VocabularyTypeService)
+        )(config=service_configs.vocabulary_types)
+
+    def resource_configs(self, app):
+        """Customized resource configs."""
+
+        class ResourceConfigs:
+            affiliations = obj_or_import_string(
+                app.config.get(
+                    "VOCABULARIES_AFFILIATIONS_RESOURCE_CONFIG_CLASS",
+                    AffiliationsResourceConfig,
+                )
+            )
+            awards = obj_or_import_string(
+                app.config.get(
+                    "VOCABULARIES_AWARDS_RESOURCE_CONFIG_CLASS",
+                    AwardsResourceConfig,
+                )
+            )
+            funders = obj_or_import_string(
+                app.config.get(
+                    "VOCABULARIES_FUNDERS_RESOURCE_CONFIG_CLASS",
+                    FundersResourceConfig,
+                )
+            )
+            names = obj_or_import_string(
+                app.config.get(
+                    "VOCABULARIES_NAMES_RESOURCE_CONFIG_CLASS", NamesResourceConfig
+                )
+            )
+            subjects = obj_or_import_string(
+                app.config.get(
+                    "VOCABULARIES_SUBJECTS_RESOURCE_CONFIG_CLASS",
+                    SubjectsResourceConfig,
+                )
+            )
+            vocabularies = obj_or_import_string(
+                app.config.get(
+                    "VOCABULARIES_RESOURCE_CONFIG_CLASS",
+                    app.config["VOCABULARIES_RESOURCE_CONFIG"],
+                )
+            )
+            vocabulary_admin = obj_or_import_string(
+                app.config.get(
+                    "VOCABULARIES_ADMIN_RESOURCE_CONFIG_CLASS",
+                    VocabularyTypeResourceConfig,
+                )
+            )
+
+        return ResourceConfigs
 
     def init_resource(self, app):
         """Initialize vocabulary resources."""
+
+        resource_configs = self.resource_configs(app)
+
         # Generic Vocabularies
-        self.affiliations_resource = AffiliationsResource(
+        self.affiliations_resource = obj_or_import_string(
+            app.config.get(
+                "VOCABULARIES_AFFILIATIONS_RESOURCE_CLASS", AffiliationsResource
+            )
+        )(
             service=self.affiliations_service,
-            config=AffiliationsResourceConfig,
+            config=resource_configs.affiliations,
         )
-        self.funders_resource = FundersResource(
+
+        self.funders_resource = obj_or_import_string(
+            app.config.get("VOCABULARIES_FUNDERS_RESOURCE_CLASS", FundersResource)
+        )(
             service=self.funders_service,
-            config=FundersResourceConfig,
+            config=resource_configs.funders,
         )
-        self.names_resource = NamesResource(
+
+        self.names_resource = obj_or_import_string(
+            app.config.get("VOCABULARIES_NAMES_RESOURCE_CLASS", NamesResource)
+        )(
             service=self.names_service,
-            config=NamesResourceConfig,
+            config=resource_configs.names,
         )
-        self.awards_resource = AwardsResource(
+
+        self.awards_resource = obj_or_import_string(
+            app.config.get("VOCABULARIES_AWARDS_RESOURCE_CLASS", AwardsResource)
+        )(
             service=self.awards_service,
-            config=AwardsResourceConfig,
+            config=resource_configs.awards,
         )
-        self.subjects_resource = SubjectsResource(
+
+        self.subjects_resource = obj_or_import_string(
+            app.config.get("VOCABULARIES_SUBJECTS_RESOURCE_CLASS", SubjectsResource)
+        )(
             service=self.subjects_service,
-            config=SubjectsResourceConfig,
+            config=resource_configs.subjects,
         )
-        self.resource = VocabulariesResource(
+
+        self.resource = obj_or_import_string(
+            app.config.get("VOCABULARIES_RESOURCE_CLASS", VocabulariesResource)
+        )(
             service=self.vocabularies_service,
-            config=app.config["VOCABULARIES_RESOURCE_CONFIG"],
+            config=resource_configs.vocabularies,
         )
-        self.vocabulary_admin_resource = VocabulariesAdminResource(
+
+        self.vocabulary_admin_resource = obj_or_import_string(
+            app.config.get(
+                "VOCABULARIES_ADMIN_RESOURCE_CLASS", VocabulariesAdminResource
+            )
+        )(
             service=self.vocabulary_types_service,
-            config=VocabularyTypeResourceConfig,
+            config=resource_configs.vocabulary_admin,
         )
 
 
