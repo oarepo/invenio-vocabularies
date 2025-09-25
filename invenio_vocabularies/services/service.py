@@ -90,7 +90,7 @@ class VocabulariesService(RecordService):
         self, identity, params=None, search_preference=None, type=None, **kwargs
     ):
         """Search for vocabulary entries."""
-        self.require_permission(identity, "search")
+        self.require_permission(identity, "search", type=type)
 
         # If not found, NoResultFound is raised (caught by the resource).
         vocabulary_type = VocabularyType.query.filter_by(id=type).one()
