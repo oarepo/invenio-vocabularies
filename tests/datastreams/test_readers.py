@@ -462,4 +462,26 @@ def test_oaipmh_reader_no_records_match(httpserver, oai_response_no_match):
         next(result)
 
 
+def test_oaipmh_reader_read_identifier(httpserver, oai_response_match_get_record):
+    httpserver.expect_request(
+        "/oai/repository",
+        query_string={
+            "verb": "GetRecord",
+            "metadataPrefix": "MARC21plus-1-xml",
+            "identifier": "oai:dnb.de/authorities:sachbegriff/1074025261",
+        },
+    ).respond_with_data(
+        response_data=oai_response_match_get_record, mimetype="application/xml"
+    )
+    reader = OAIPMHReader(
+        base_url=httpserver.url_for("/oai/repository"),
+        metadata_prefix="MARC21plus-1-xml",
+        verb="GetRecord",
+        identifiers=["oai:dnb.de/authorities:sachbegriff/1074025261"],
+    )
+    result = reader.read()
+    record = next(result)
+    assert "record" in record
+
+
 # FIXME: add test for csv reader
