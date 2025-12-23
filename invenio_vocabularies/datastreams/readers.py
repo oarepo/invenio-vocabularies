@@ -289,15 +289,31 @@ class OAIPMHReader(BaseReader):
         from_date=None,
         until_date=None,
         verb=None,
+        identifiers=None,
+        ignore_deleted=False,
         **kwargs,
     ):
-        """Constructor."""
+        """Constructor.
+
+        :param base_url: The base URL of the OAI-PMH endpoint.
+        :param metadata_prefix: The metadata prefix to use (default is "oai_dc").
+        :param set: The set to filter records by.
+        :param from_date: The start date for harvesting records.
+        :param until_date: The end date for harvesting records.
+        :param verb: The OAI-PMH verb to use (default is "ListRecords").
+        :param identifiers: List of record identifiers to fetch.
+        """
         self._base_url = base_url
         self._metadata_prefix = metadata_prefix if not None else "oai_dc"
         self._set = set
         self._until = until_date
         self._from = from_date
-        self._verb = verb if not None else "ListRecords"
+        self._identifiers = identifiers
+        self._ignore_deleted = ignore_deleted
+        if identifiers:
+            self._verb = verb if verb is not None else "GetRecord"
+        else:
+            self._verb = verb if verb is not None else "ListRecords"
         super().__init__(*args, **kwargs)
 
     def _iter(self, scythe, *args, **kwargs):
@@ -320,7 +336,7 @@ class OAIPMHReader(BaseReader):
                     until=self._until,
                     metadata_prefix=self._metadata_prefix,
                     set_=self._set,
-                    ignore_deleted=True,
+                    ignore_deleted=self._ignore_deleted,
                 )
                 for record in records:
                     yield {"record": record}
@@ -329,16 +345,20 @@ class OAIPMHReader(BaseReader):
         else:
             scythe.class_mapping["GetRecord"] = OAIRecord
             try:
-                headers = scythe.list_identifiers(
-                    from_=self._from,
-                    until=self._until,
-                    metadata_prefix=self._metadata_prefix,
-                    set_=self._set,
-                    ignore_deleted=True,
-                )
-                for header in headers:
+                identifiers = self._identifiers or []
+                if not identifiers:
+                    headers = scythe.list_identifiers(
+                        from_=self._from,
+                        until=self._until,
+                        metadata_prefix=self._metadata_prefix,
+                        set_=self._set,
+                        ignore_deleted=True,
+                    )
+                    identifiers = [header.identifier for header in headers]
+
+                for identifier in identifiers:
                     record = scythe.get_record(
-                        identifier=header.identifier,
+                        identifier=identifier,
                         metadata_prefix=self._metadata_prefix,
                     )
                     yield {"record": record}
